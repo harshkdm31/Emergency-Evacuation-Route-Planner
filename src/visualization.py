@@ -1,4 +1,5 @@
 
+from tracemalloc import start
 from typing import List, Optional, Sequence, Set, Tuple
 
 import plotly.graph_objects as go
@@ -7,13 +8,16 @@ from src.graph import Graph
 
 
 def create_graph_figure(
-    graph: Graph,
-    start: Optional[str] = None,
-    destination: Optional[str] = None,
-    path: Optional[Sequence[str]] = None,
-    explored: Optional[Sequence[str]] = None,
-    current_node: Optional[str] = None,
-    show_weights: bool = True,
+    graph,
+    start=None,
+    destination=None,
+    path=None,
+    explored=None,
+    current_node=None,
+    show_weights=True,
+    discovered=None,
+    discovered_edges=None,
+    current_edge=None,
 ) -> go.Figure:
     """
     Create a Plotly visualization of a weighted road network.
@@ -32,6 +36,10 @@ def create_graph_figure(
     locations = graph.get_locations()
     path = list(path or [])
     explored_set: Set[str] = set(explored or [])
+    discovered_set: Set[str] = set(discovered or [])
+    discovered_edges_set = {
+        frozenset(edge) for edge in (discovered_edges or [])
+    }
 
     missing_positions = [
         node for node in locations if node not in graph.positions
@@ -67,6 +75,24 @@ def create_graph_figure(
             color = "#DC2626"
             dash = "dash"
             width = 2
+        elif (
+            frozenset((u, v))
+            in {frozenset(edge) for edge in zip(path, path[1:])}
+        ):
+            color = "#16A34A"
+            dash = "solid"
+            width = 5
+        elif (
+            current_edge is not None
+            and frozenset((u, v)) == frozenset(current_edge)
+        ):
+            color = "#F59E0B"
+            dash = "solid"
+            width = 6
+        elif frozenset((u, v)) in discovered_edges_set:
+            color = "#9333EA"
+            dash = "solid"
+            width = 4
         else:
             color = "#94A3B8"
             dash = "solid"
@@ -133,11 +159,13 @@ def create_graph_figure(
         elif node == destination:
             color, size, role = "#DC2626", 27, "DESTINATION"
         elif node == current_node:
-            color, size, role = "#F59E0B", 24, "CURRENT"
+            color, size, role = "#F59E0B", 29, "CURRENT"
         elif node in path:
-            color, size, role = "#16A34A", 21, "ROUTE"
+            color, size, role = "#16A34A", 23, "ROUTE"
         elif node in explored_set:
-            color, size, role = "#A78BFA", 19, "EXPLORED"
+            color, size, role = "#A78BFA", 20, "EXPLORED"
+        elif node in discovered_set:
+            color, size, role = "#C084FC", 18, "DISCOVERED"
         else:
             color, size, role = "#64748B", 16, "LOCATION"
 
@@ -172,6 +200,9 @@ def create_graph_figure(
         ("Selected route", "#16A34A", "line"),
         ("Explored", "#A78BFA", "circle"),
         ("Blocked road", "#DC2626", "line"),
+        ("Discovered", "#C084FC", "circle"),
+        ("Discovered road", "#9333EA", "line"),
+        ("Current edge", "#F59E0B", "line"),
     ]
 
     for label, color, symbol in legend_items:

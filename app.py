@@ -9,6 +9,7 @@ from src.dijkstra import solve_dijkstra
 from src.bellman_ford import solve_bellman_ford
 from src.benchmark import benchmark_algorithms
 from src.visualization import create_graph_figure
+from src.animation import build_animation_frames
 
 
 st.set_page_config(
@@ -149,8 +150,9 @@ for u, v, _ in all_roads:
         graph.unblock_road(u, v)
 
 
+
 # ---------------------------------------------------------
-# 4. Run the selected algorithm
+# 4. Run the selected algorithm only when inputs change
 # ---------------------------------------------------------
 SOLVERS = {
     "BFS": solve_bfs,
@@ -159,11 +161,34 @@ SOLVERS = {
     "Bellman-Ford": solve_bellman_ford,
 }
 
-try:
-    result = SOLVERS[algorithm](graph, start, destination)
-except ValueError as exc:
-    st.error(f"Unable to calculate route: {exc}")
-    st.stop()
+blocked_signature = tuple(
+    sorted(tuple(sorted(edge)) for edge in desired_blocked)
+)
+
+run_signature = (
+    algorithm,
+    start,
+    destination,
+    blocked_signature,
+)
+
+if st.session_state.get("route_signature") != run_signature:
+    try:
+        st.session_state["route_result"] = SOLVERS[algorithm](
+            graph, start, destination
+        )
+        st.session_state["route_signature"] = run_signature
+
+        # Reset playback whenever route inputs change.
+        st.session_state["animation_frame"] = 0
+        st.session_state["animation_playing"] = False
+
+    except ValueError as exc:
+        st.error(f"Unable to calculate route: {exc}")
+        st.stop()
+
+result = st.session_state["route_result"]
+
 
 
 # ---------------------------------------------------------
@@ -200,27 +225,181 @@ metric4.metric(
 )
 
 
+
 # ---------------------------------------------------------
-# 6. Interactive graph visualization
+# 6. Animated graph visualization
 # ---------------------------------------------------------
 st.subheader("Campus Road Network")
+st.caption(
+    "Step through the algorithm's recorded events to see "
+    "how it explores the campus graph."
+)
 
-try:
-    figure = create_graph_figure(
-        graph,
-        start=start,
-        destination=destination,
-        path=result["path"],
-        explored=result["explored"],
+frames = build_animation_frames(result)
+
+if frames:
+    total_frames = len(frames)
+
+    # Keep the current frame index valid.
+    frame_index = st.session_state.get("animation_frame", 0)
+    frame_index = max(0, min(frame_index, total_frames - 1))
+    st.session_state["animation_frame"] = frame_index
+
+    speed_options = {
+        "Slow": 1.2,
+        "Normal": 0.6,
+        "Fast": 0.25,
+    }
+
+    control_col1, control_col2 = st.columns([2, 1])
+
+    with control_col1:
+        speed_label = st.selectbox(
+            "Playback speed",
+            options=list(speed_options),
+            index=1,
+            key="animation_speed",
+        )
+
+    with control_col2:
+        st.metric(
+            "Animation frame",
+            f"{frame_index + 1} / {total_frames}",
+        )
+
+    # Manual playback controls.
+    previous_col, play_col, next_col, restart_col = st.columns(4)
+
+    with previous_col:
+        if st.button(
+            "⏮ Previous",
+            disabled=frame_index == 0,
+            use_container_width=True,
+            key="animation_previous",
+        ):
+            st.session_state["animation_frame"] = frame_index - 1
+            st.session_state["animation_playing"] = False
+            st.rerun()
+
+    with play_col:
+        is_playing = st.session_state.get("animation_playing", False)
+
+        if st.button(
+            "⏸ Pause" if is_playing else "▶ Play",
+            use_container_width=True,
+            key="animation_toggle",
+        ):
+            st.session_state["animation_playing"] = not is_playing
+
+            # Stop automatically at the last frame.
+            if frame_index >= total_frames - 1:
+                st.session_state["animation_frame"] = 0
+                st.session_state["animation_playing"] = True
+
+            st.rerun()
+
+    with next_col:
+        if st.button(
+            "Next ⏭",
+            disabled=frame_index >= total_frames - 1,
+            use_container_width=True,
+            key="animation_next",
+        ):
+            st.session_state["animation_frame"] = frame_index + 1
+            st.session_state["animation_playing"] = False
+            st.rerun()
+
+    with restart_col:
+        if st.button(
+            "↻ Restart",
+            use_container_width=True,
+            key="animation_restart",
+        ):
+            st.session_state["animation_frame"] = 0
+            st.session_state["animation_playing"] = False
+            st.rerun()
+
+    # Render the selected frame.
+    frame = frames[st.session_state["animation_frame"]]
+
+    st.info(
+        f"**Step {frame['frame_index'] + 1}:** "
+        f"{frame['status_message']}"
     )
 
-    st.plotly_chart(
-        figure,
-        use_container_width=True,
-        key="campus_graph",
-    )
-except ValueError as exc:
-    st.error(f"Unable to display graph: {exc}")
+    if frame["path_cost"] is not None:
+        st.caption(f"Final route cost: {frame['path_cost']}")
+
+    try:
+        figure = create_graph_figure(
+            graph,
+            start=start,
+            destination=destination,
+            path=frame["path"],
+            explored=frame["explored"],
+            current_node=frame["current_node"],
+            discovered=frame["discovered"],
+            discovered_edges=frame["discovered_edges"],
+            current_edge=frame["current_edge"],
+        )
+
+        st.plotly_chart(
+            figure,
+            use_container_width=True,
+            key=f"campus_graph_frame_{frame['frame_index']}",
+        )
+
+    except ValueError as exc:
+        st.error(f"Unable to display graph: {exc}")
+
+    with st.expander("Current animation event"):
+        st.json(frame["event"])
+
+    # Automatic playback. The fragment reruns periodically while playing.
+    if st.session_state.get("animation_playing", False):
+        @st.fragment(run_every=speed_options[speed_label])
+        def animation_autoplay():
+            current = st.session_state.get("animation_frame", 0)
+
+            if not st.session_state.get("animation_playing", False):
+                return
+
+            if current >= total_frames - 1:
+                st.session_state["animation_playing"] = False
+                st.rerun()
+                return
+
+            st.session_state["animation_frame"] = current + 1
+
+            next_frame = frames[current + 1]
+            st.caption(
+                f"Playing: step {current + 2} of {total_frames} — "
+                f"{next_frame['status_message']}"
+            )
+
+            next_figure = create_graph_figure(
+                graph,
+                start=start,
+                destination=destination,
+                path=next_frame["path"],
+                explored=next_frame["explored"],
+                current_node=next_frame["current_node"],
+                discovered=next_frame["discovered"],
+                discovered_edges=next_frame["discovered_edges"],
+                current_edge=next_frame["current_edge"],
+            )
+
+            st.plotly_chart(
+                next_figure,
+                use_container_width=True,
+                key=f"autoplay_graph_{next_frame['frame_index']}",
+            )
+
+        animation_autoplay()
+
+else:
+    st.warning("No animation events were recorded for this algorithm run.")
+
 
 
 # ---------------------------------------------------------
