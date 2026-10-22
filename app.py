@@ -319,83 +319,60 @@ if frames:
             st.session_state["animation_playing"] = False
             st.rerun()
 
-    # Render the selected frame.
-    frame = frames[st.session_state["animation_frame"]]
-
-    st.info(
-        f"**Step {frame['frame_index'] + 1}:** "
-        f"{frame['status_message']}"
+    # Automatic playback.
+    # The fragment advances the frame and redraws the graph
+    # together on each timed rerun.
+    @st.fragment(
+        run_every=(
+            speed_options[speed_label]
+            if st.session_state.get("animation_playing", False)
+            else None
+        )
     )
+    def animation_autoplay():
+        current = st.session_state.get("animation_frame", 0)
+        playing = st.session_state.get("animation_playing", False)
 
-    if frame["path_cost"] is not None:
-        st.caption(f"Final route cost: {frame['path_cost']}")
+        if playing:
+            if current >= total_frames - 1:
+                st.session_state["animation_playing"] = False
+            else:
+                current += 1
+                st.session_state["animation_frame"] = current
 
-    try:
+        frame_to_show = frames[
+            st.session_state.get("animation_frame", 0)
+        ]
+
+        st.info(
+            f"**Step {frame_to_show['frame_index'] + 1}:** "
+            f"{frame_to_show['status_message']}"
+        )
+
+        if frame_to_show["path_cost"] is not None:
+            st.caption(
+                f"Final route cost: {frame_to_show['path_cost']}"
+            )
+
         figure = create_graph_figure(
             graph,
             start=start,
             destination=destination,
-            path=frame["path"],
-            explored=frame["explored"],
-            current_node=frame["current_node"],
-            discovered=frame["discovered"],
-            discovered_edges=frame["discovered_edges"],
-            current_edge=frame["current_edge"],
+            path=frame_to_show["path"],
+            explored=frame_to_show["explored"],
+            current_node=frame_to_show["current_node"],
+            discovered=frame_to_show["discovered"],
+            discovered_edges=frame_to_show["discovered_edges"],
+            current_edge=frame_to_show["current_edge"],
         )
 
         st.plotly_chart(
             figure,
             use_container_width=True,
-            key=f"campus_graph_frame_{frame['frame_index']}",
+            key=f"autoplay_graph_{frame_to_show['frame_index']}",
         )
 
-    except ValueError as exc:
-        st.error(f"Unable to display graph: {exc}")
-
-    with st.expander("Current animation event"):
-        st.json(frame["event"])
-
-    # Automatic playback. The fragment reruns periodically while playing.
-    if st.session_state.get("animation_playing", False):
-        @st.fragment(run_every=speed_options[speed_label])
-        def animation_autoplay():
-            current = st.session_state.get("animation_frame", 0)
-
-            if not st.session_state.get("animation_playing", False):
-                return
-
-            if current >= total_frames - 1:
-                st.session_state["animation_playing"] = False
-                st.rerun()
-                return
-
-            st.session_state["animation_frame"] = current + 1
-
-            next_frame = frames[current + 1]
-            st.caption(
-                f"Playing: step {current + 2} of {total_frames} — "
-                f"{next_frame['status_message']}"
-            )
-
-            next_figure = create_graph_figure(
-                graph,
-                start=start,
-                destination=destination,
-                path=next_frame["path"],
-                explored=next_frame["explored"],
-                current_node=next_frame["current_node"],
-                discovered=next_frame["discovered"],
-                discovered_edges=next_frame["discovered_edges"],
-                current_edge=next_frame["current_edge"],
-            )
-
-            st.plotly_chart(
-                next_figure,
-                use_container_width=True,
-                key=f"autoplay_graph_{next_frame['frame_index']}",
-            )
-
-        animation_autoplay()
+    animation_autoplay()
 
 else:
     st.warning("No animation events were recorded for this algorithm run.")

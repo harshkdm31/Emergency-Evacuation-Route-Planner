@@ -48,15 +48,48 @@ def build_animation_frames(result):
                 else "Exploring the next state."
             )
 
+        
         elif event_type == "edge_check":
             parent = event.get("parent")
             neighbor = event.get("node")
+            current_node = parent
 
             if parent is not None and neighbor is not None:
                 current_edge = (parent, neighbor)
-                current_node = parent
 
-            if event.get("already_visited"):
+            if event.get("candidate_distance") is not None:
+                candidate = event["candidate_distance"]
+                existing = event.get("existing_distance")
+
+                if existing is None:
+                    status_message = (
+                        f"Checking {parent} → {neighbor}: "
+                        f"candidate distance {candidate:g}."
+                    )
+                elif existing == float("inf"):
+                    status_message = (
+                        f"Checking {parent} → {neighbor}: "
+                        f"candidate distance {candidate:g}; "
+                        "no route to this neighbor is known yet."
+                    )
+                elif event.get("current_distance") is None:
+                    status_message = event.get(
+                        "message",
+                        f"Cannot evaluate {parent} → {neighbor}: "
+                        "the source distance is unknown.",
+                    )
+                elif event.get("already_visited"):
+                    status_message = (
+                        f"Checking {parent} → {neighbor}: "
+                        "neighbor already visited."
+                    )
+                else:
+                    status_message = (
+                        f"Checking {parent} → {neighbor}: "
+                        "neighbor not yet visited."
+                    )
+
+            elif event.get("already_visited"):
                 status_message = (
                     f"Checking {parent} → {neighbor}: "
                     "neighbor already visited."
@@ -66,6 +99,7 @@ def build_animation_frames(result):
                     f"Checking {parent} → {neighbor}: "
                     "neighbor not yet visited."
                 )
+
 
         elif event_type in ("discover", "relax"):
             parent = event.get("parent")
@@ -100,6 +134,43 @@ def build_animation_frames(result):
                     )
                 else:
                     status_message = f"Checking edge {parent} → {node}."
+
+                
+        elif event_type == "no_update":
+            parent = event.get("parent")
+            node = event.get("node")
+
+            if parent is not None and node is not None:
+                current_edge = (parent, node)
+                current_node = parent
+
+            candidate = event.get("candidate_distance")
+            existing = event.get("old_distance")
+            iteration = event.get("iteration")
+
+            prefix = (
+                f"Iteration {iteration}: "
+                if iteration is not None
+                else ""
+            )
+
+            if candidate is None:
+                status_message = event.get(
+                    "message",
+                    f"{prefix}No update for {node}.",
+                )
+            elif existing is not None:
+                status_message = (
+                    f"{prefix}No update for {node}: candidate "
+                    f"distance {candidate:g} is not less than "
+                    f"the existing distance {existing:g}."
+                )
+            else:
+                status_message = event.get(
+                    "message",
+                    f"{prefix}No update for {node}.",
+                )
+
 
         elif event_type == "iteration":
             status_message = (

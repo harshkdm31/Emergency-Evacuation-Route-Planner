@@ -77,15 +77,58 @@ def solve_bellman_ford(
             "message": f"Relaxation pass {iteration + 1}",
         })
 
+        
         for u, v, weight in edges:
-            if distances[u] == inf:
+            # Record the edge even when its source is unreachable.
+            current_distance = distances[u]
+            old_distance = distances[v]
+
+            candidate_distance = (
+                current_distance + weight
+                if current_distance != inf
+                else None
+            )
+
+            events.append({
+                "type": "edge_check",
+                "node": v,
+                "parent": u,
+                "weight": weight,
+                "iteration": iteration + 1,
+                "current_distance": (
+                    current_distance
+                    if current_distance != inf
+                    else None
+                ),
+                "candidate_distance": candidate_distance,
+                "existing_distance": (
+                    old_distance if old_distance != inf else None
+                ),
+                "message": (
+                    f"Iteration {iteration + 1}: checking "
+                    f"{u} → {v}."
+                ),
+            })
+
+            # An unreachable source cannot relax an edge.
+            if current_distance == inf:
+                events.append({
+                    "type": "no_update",
+                    "node": v,
+                    "parent": u,
+                    "iteration": iteration + 1,
+                    "message": (
+                        f"Skipping {u} → {v}: "
+                        f"{u} is still unreachable."
+                    ),
+                })
                 continue
 
             if u not in explored_set:
                 explored_set.add(u)
                 explored.append(u)
 
-            new_distance = distances[u] + weight
+            new_distance = candidate_distance
 
             if new_distance < distances[v]:
                 old_distance = distances[v]
@@ -102,10 +145,26 @@ def solve_bellman_ford(
                     "weight": weight,
                     "iteration": iteration + 1,
                     "message": (
-                        f"Updated distance to {v}: "
-                        f"{old_distance:g} → {new_distance:g}"
+                        f"Iteration {iteration + 1}: updated distance "
+                        f"to {v}: {old_distance:g} → {new_distance:g}."
                     ),
                 })
+            else:
+                events.append({
+                    "type": "no_update",
+                    "node": v,
+                    "parent": u,
+                    "old_distance": distances[v],
+                    "candidate_distance": new_distance,
+                    "iteration": iteration + 1,
+                    "message": (
+                        f"Iteration {iteration + 1}: no update for {v}; "
+                        f"candidate distance {new_distance:g} is not "
+                        f"less than the existing distance "
+                        f"{distances[v]:g}."
+                    ),
+                })
+
 
         if not changed:
             events.append({
