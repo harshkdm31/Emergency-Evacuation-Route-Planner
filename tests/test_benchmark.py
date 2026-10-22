@@ -78,3 +78,38 @@ def test_benchmark_rejects_unknown_locations(sample_graph):
     with pytest.raises(ValueError):
         benchmark_algorithms(sample_graph, "A", "Unknown")
 
+
+def test_benchmark_handles_unreachable_destination(sample_graph):
+    sample_graph.block_road("A", "B")
+    sample_graph.block_road("A", "C")
+
+    results = benchmark_algorithms(
+        sample_graph, "A", "D", repetitions=1
+    )
+
+    for result in results:
+        assert result["found"] is False
+        assert result["path"] == []
+        assert result["path_cost"] is None
+
+
+def test_benchmark_handles_start_equal_to_destination(sample_graph):
+    results = benchmark_algorithms(
+        sample_graph, "A", "A", repetitions=1
+    )
+
+    for result in results:
+        assert result["found"] is True
+        assert result["path"] == ["A"]
+        assert result["path_cost"] == 0
+
+
+def test_benchmark_reports_operation_count_metrics(sample_graph):
+    results = benchmark_algorithms(
+        sample_graph, "A", "D", repetitions=1
+    )
+
+    for result in results:
+        assert result["edges_examined"] >= 0
+        assert result["successful_relaxations"] >= 0
+        assert result["event_count"] >= 0

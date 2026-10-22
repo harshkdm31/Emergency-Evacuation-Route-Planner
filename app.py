@@ -441,6 +441,9 @@ if "benchmark_results" in st.session_state:
                     row["execution_time_ms"], 5
                 ),
                 "Vertices explored": row["explored_vertices"],
+                "Edges examined": row["edges_examined"],
+                "Successful relaxations": row["successful_relaxations"],
+                "Algorithm events": row["event_count"],
                 "Route found": row["found"],
                 "Path cost": row["path_cost"],
                 "Time complexity": row["theoretical_time_complexity"],
@@ -477,6 +480,50 @@ if "benchmark_results" in st.session_state:
         use_container_width=True,
         key="benchmark_chart",
     )
+
+    # Compare graph traversal activity across algorithms.
+    operation_chart = go.Figure(
+        data=[
+            go.Bar(
+                name="Vertices explored",
+                x=[
+                    row["algorithm"]
+                    for row in benchmark_results
+                ],
+                y=[
+                    row["explored_vertices"]
+                    for row in benchmark_results
+                ],
+            ),
+            go.Bar(
+                name="Edges examined",
+                x=[
+                    row["algorithm"]
+                    for row in benchmark_results
+                ],
+                y=[
+                    row["edges_examined"]
+                    for row in benchmark_results
+                ],
+            ),
+        ]
+    )
+
+    operation_chart.update_layout(
+        title="Algorithm Operation Count Comparison",
+        xaxis_title="Algorithm",
+        yaxis_title="Recorded operations",
+        barmode="group",
+        template="plotly_white",
+        legend_title="Metric",
+    )
+
+    st.plotly_chart(
+        operation_chart,
+        use_container_width=True,
+        key="operation_count_chart",
+    )
+
 
 
 # ---------------------------------------------------------

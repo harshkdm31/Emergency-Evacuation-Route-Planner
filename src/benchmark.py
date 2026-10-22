@@ -59,6 +59,18 @@ def benchmark_algorithms(
 
         assert result is not None
 
+        events = result.get("events", [])
+
+        edges_examined = sum(
+            1 for event in events
+            if event.get("type") == "edge_check"
+        )
+
+        successful_relaxations = sum(
+            1 for event in events
+            if event.get("type") == "relax"
+        )
+
         results.append({
             "algorithm": algorithm_name,
             "execution_time_ms": median(run_times) * 1000,
@@ -67,6 +79,9 @@ def benchmark_algorithms(
             "path": result["path"],
             "path_cost": result["path_cost"],
             "explored_vertices": len(result["explored"]),
+            "edges_examined": edges_examined,
+            "successful_relaxations": successful_relaxations,
+            "event_count": len(events),
             "explored_order": result["explored"],
             "theoretical_time_complexity": {
                 "BFS": "O(V + E)",
