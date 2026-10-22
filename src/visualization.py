@@ -79,22 +79,22 @@ def create_graph_figure(
             frozenset((u, v))
             in {frozenset(edge) for edge in zip(path, path[1:])}
         ):
-            color = "#16A34A"
+            color = "#34D399"
             dash = "solid"
             width = 5
         elif (
             current_edge is not None
             and frozenset((u, v)) == frozenset(current_edge)
         ):
-            color = "#F59E0B"
+            color = "#FBBF24"
             dash = "solid"
             width = 6
         elif frozenset((u, v)) in discovered_edges_set:
-            color = "#9333EA"
+            color = "#8B5CF6"
             dash = "solid"
             width = 4
         else:
-            color = "#94A3B8"
+            color = "#3B4A66"
             dash = "solid"
             width = 2
 
@@ -124,9 +124,9 @@ def create_graph_figure(
                 y=midpoint_y,
                 text=f"{weight:g}",
                 showarrow=False,
-                font=dict(size=11, color="#334155"),
-                bgcolor="white",
-                bordercolor="#CBD5E1",
+                font=dict(size=11, color="#CBD5E1"),
+                bgcolor="#0E1626",
+                bordercolor="#2A3A58",
                 borderwidth=1,
                 borderpad=2,
             )
@@ -141,7 +141,7 @@ def create_graph_figure(
                 x=[x1, x2],
                 y=[y1, y2],
                 mode="lines",
-                line=dict(color="#16A34A", width=5),
+                line=dict(color="#34D399", width=5),
                 hoverinfo="text",
                 text=[f"Selected route: {u} → {v}"] * 2,
                 showlegend=False,
@@ -155,19 +155,19 @@ def create_graph_figure(
 
     for node in locations:
         if node == start:
-            color, size, role = "#2563EB", 27, "START"
+            color, size, role = "#22D3EE", 27, "START"
         elif node == destination:
-            color, size, role = "#DC2626", 27, "DESTINATION"
+            color, size, role = "#EF4444", 27, "DESTINATION"
         elif node == current_node:
-            color, size, role = "#F59E0B", 29, "CURRENT"
+            color, size, role = "#FBBF24", 29, "CURRENT"
         elif node in path:
-            color, size, role = "#16A34A", 23, "ROUTE"
+            color, size, role = "#34D399", 23, "ROUTE"
         elif node in explored_set:
             color, size, role = "#A78BFA", 20, "EXPLORED"
         elif node in discovered_set:
-            color, size, role = "#C084FC", 18, "DISCOVERED"
+            color, size, role = "#C4B5FD", 18, "DISCOVERED"
         else:
-            color, size, role = "#64748B", 16, "LOCATION"
+            color, size, role = "#475569", 16, "LOCATION"
 
         node_colors.append(color)
         node_sizes.append(size)
@@ -180,13 +180,13 @@ def create_graph_figure(
             mode="markers+text",
             text=locations,
             textposition="top center",
-            textfont=dict(size=12, color="#0F172A"),
+            textfont=dict(size=12, color="#E2E8F0"),
             hovertext=hover_text,
             hoverinfo="text",
             marker=dict(
                 size=node_sizes,
                 color=node_colors,
-                line=dict(color="white", width=2),
+                line=dict(color="#070B14", width=2),
             ),
             showlegend=False,
         )
@@ -194,15 +194,15 @@ def create_graph_figure(
 
     # Add a compact legend for node roles and road status.
     legend_items = [
-        ("Start", "#2563EB", "circle"),
-        ("Destination", "#DC2626", "circle"),
-        ("Current node", "#F59E0B", "circle"),
-        ("Selected route", "#16A34A", "line"),
+        ("Start", "#22D3EE", "circle"),
+        ("Destination", "#EF4444", "circle"),
+        ("Current node", "#FBBF24", "circle"),
+        ("Selected route", "#34D399", "line"),
         ("Explored", "#A78BFA", "circle"),
         ("Blocked road", "#DC2626", "line"),
-        ("Discovered", "#C084FC", "circle"),
-        ("Discovered road", "#9333EA", "line"),
-        ("Current edge", "#F59E0B", "line"),
+        ("Discovered", "#C4B5FD", "circle"),
+        ("Discovered road", "#8B5CF6", "line"),
+        ("Current edge", "#FBBF24", "line"),
     ]
 
     for label, color, symbol in legend_items:
@@ -221,15 +221,29 @@ def create_graph_figure(
 
     fig.update_layout(
         title="Emergency Evacuation Road Network",
-        template="plotly_white",
+        template="plotly_dark",
         height=600,
         margin=dict(l=20, r=20, t=70, b=20),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(
+            family="Inter, 'Segoe UI', system-ui, sans-serif",
+            color="#E2E8F0",
+        ),
+        title_font=dict(size=16, color="#F8FAFC"),
+        hoverlabel=dict(
+            bgcolor="#121C30",
+            bordercolor="#22D3EE",
+            font=dict(color="#E2E8F0", size=12),
+        ),
         legend=dict(
             orientation="h",
             yanchor="bottom",
             y=1.02,
             xanchor="left",
             x=0,
+            bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#8B9AB4", size=11),
         ),
         xaxis=dict(visible=False, scaleanchor="y", scaleratio=1),
         yaxis=dict(visible=False),

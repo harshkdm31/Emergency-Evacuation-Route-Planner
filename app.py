@@ -10,6 +10,7 @@ from src.bellman_ford import solve_bellman_ford
 from src.benchmark import benchmark_algorithms
 from src.visualization import create_graph_figure
 from src.animation import build_animation_frames
+from src.theme import APP_CSS, HEADER_BADGE_HTML, style_figure
 
 
 st.set_page_config(
@@ -17,6 +18,10 @@ st.set_page_config(
     page_icon="🚨",
     layout="wide",
 )
+
+# Presentation-only styling.
+st.markdown(APP_CSS, unsafe_allow_html=True)
+st.markdown(HEADER_BADGE_HTML, unsafe_allow_html=True)
 
 st.title("🚨 Emergency Evacuation & Route Planner")
 st.caption(
@@ -464,6 +469,12 @@ if "benchmark_results" in st.session_state:
                     for row in benchmark_results
                 ],
                 textposition="auto",
+                marker=dict(
+                    color="#22D3EE",
+                    line=dict(color="#67E8F9", width=1),
+                ),
+                insidetextfont=dict(color="#04121A"),
+                outsidetextfont=dict(color="#E2E8F0"),
             )
         ]
     )
@@ -472,8 +483,9 @@ if "benchmark_results" in st.session_state:
         title="Execution Time Comparison",
         xaxis_title="Algorithm",
         yaxis_title="Median execution time (ms)",
-        template="plotly_white",
+        template="plotly_dark",
     )
+    style_figure(chart)
 
     st.plotly_chart(
         chart,
@@ -494,6 +506,7 @@ if "benchmark_results" in st.session_state:
                     row["explored_vertices"]
                     for row in benchmark_results
                 ],
+                marker_color="#22D3EE",
             ),
             go.Bar(
                 name="Edges examined",
@@ -505,6 +518,7 @@ if "benchmark_results" in st.session_state:
                     row["edges_examined"]
                     for row in benchmark_results
                 ],
+                marker_color="#2DD4BF",
             ),
         ]
     )
@@ -514,9 +528,10 @@ if "benchmark_results" in st.session_state:
         xaxis_title="Algorithm",
         yaxis_title="Recorded operations",
         barmode="group",
-        template="plotly_white",
+        template="plotly_dark",
         legend_title="Metric",
     )
+    style_figure(operation_chart)
 
     st.plotly_chart(
         operation_chart,
