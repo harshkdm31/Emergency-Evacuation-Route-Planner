@@ -74,8 +74,27 @@ def solve_dfs(graph: Graph, start: str, destination: str) -> Dict[str, Any]:
 
         # Reverse insertion order because the stack is LIFO.
         # This makes the first inserted neighbor explored first.
+        
         for neighbor, weight in reversed(neighbors):
-            if neighbor not in visited:
+            already_visited = neighbor in visited
+
+            events.append({
+                "type": "edge_check",
+                "node": neighbor,
+                "parent": current,
+                "weight": weight,
+                "already_visited": already_visited,
+                "message": (
+                    f"Checking edge {current} → {neighbor}. "
+                    + (
+                        "Neighbor already visited."
+                        if already_visited
+                        else "Neighbor not yet visited; adding it to the DFS stack."
+                    )
+                ),
+            })
+
+            if not already_visited:
                 stack.append((neighbor, current_path + [neighbor]))
 
                 events.append({
@@ -85,6 +104,7 @@ def solve_dfs(graph: Graph, start: str, destination: str) -> Dict[str, Any]:
                     "weight": weight,
                     "message": f"Added {neighbor} to the DFS stack.",
                 })
+
 
     if found_path is None:
         events.append({

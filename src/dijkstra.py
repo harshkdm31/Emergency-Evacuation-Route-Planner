@@ -94,20 +94,45 @@ def solve_dijkstra(
             })
             break
 
+        
         for neighbor, weight in graph.get_neighbors(current):
-            if neighbor in settled:
+            candidate_distance = current_distance + weight
+            old_distance = distances[neighbor]
+            already_settled = neighbor in settled
+
+            # Record every examined edge, including edges that
+            # cannot improve the best-known distance.
+            events.append({
+                "type": "edge_check",
+                "node": neighbor,
+                "parent": current,
+                "weight": weight,
+                "current_distance": current_distance,
+                "candidate_distance": candidate_distance,
+                "existing_distance": old_distance,
+                "already_visited": already_settled,
+                "message": (
+                    f"Checking {current} → {neighbor}: "
+                    f"candidate distance {candidate_distance:g}, "
+                    f"existing distance "
+                    f"{old_distance:g}."
+                ),
+            })
+
+            if already_settled:
                 continue
 
-            new_distance = current_distance + weight
-
-            if new_distance < distances[neighbor]:
-                old_distance = distances[neighbor]
-                distances[neighbor] = new_distance
+            if candidate_distance < old_distance:
+                distances[neighbor] = candidate_distance
                 parents[neighbor] = current
 
                 heapq.heappush(
                     priority_queue,
-                    (new_distance, next(tie_breaker), neighbor),
+                    (
+                        candidate_distance,
+                        next(tie_breaker),
+                        neighbor,
+                    ),
                 )
 
                 events.append({
@@ -115,13 +140,28 @@ def solve_dijkstra(
                     "node": neighbor,
                     "parent": current,
                     "old_distance": old_distance,
-                    "new_distance": new_distance,
+                    "new_distance": candidate_distance,
                     "weight": weight,
                     "message": (
                         f"Updated distance to {neighbor}: "
-                        f"{old_distance:g} → {new_distance:g}"
+                        f"{old_distance:g} → "
+                        f"{candidate_distance:g}."
                     ),
                 })
+            else:
+                events.append({
+                    "type": "no_update",
+                    "node": neighbor,
+                    "parent": current,
+                    "old_distance": old_distance,
+                    "candidate_distance": candidate_distance,
+                    "message": (
+                        f"No update for {neighbor}: candidate "
+                        f"{candidate_distance:g} is not less than "
+                        f"the existing distance {old_distance:g}."
+                    ),
+                })
+
 
     if distances[destination] == float("inf"):
         events.append({

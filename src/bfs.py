@@ -68,6 +68,14 @@ def solve_bfs(graph: Graph, start: str, destination: str) -> Dict[str, Any]:
             break
 
         for neighbor, weight in graph.get_neighbors(current):
+            events.append({
+                "type": "edge_check",
+                "node": neighbor,
+                "parent": current,
+                "weight": weight,
+                "already_visited": neighbor in visited,
+            })
+
             if neighbor not in visited:
                 visited.add(neighbor)
                 parent[neighbor] = current
