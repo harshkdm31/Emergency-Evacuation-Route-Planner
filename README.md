@@ -2,6 +2,16 @@
 
 A Python-based graph algorithms project that simulates an emergency evacuation network, finds routes between campus locations, visualizes algorithm execution, simulates road closures, and compares algorithm performance.
 
+## 🚀 Live Demo
+
+**Try the Emergency Evacuation & Route Planner online:**
+
+### [🌐 Launch the Live Application](https://emergency-evacuation-route-plannergit-mpwb9wht7kuczjpkdvqvtb.streamlit.app/)
+
+Explore the campus road network, find evacuation routes using BFS, DFS, Dijkstra, and Bellman–Ford, simulate road closures, visualize algorithm execution, and compare algorithm performance.
+
+*Note: The application may take a few moments to start if it has been idle.*
+
 ## Overview
 
 The Emergency Evacuation & Route Planner models a campus as a weighted graph. Locations are represented by vertices, and roads are represented by weighted edges. Users select a starting location, destination, and pathfinding algorithm to explore how different algorithms find routes through the network.
